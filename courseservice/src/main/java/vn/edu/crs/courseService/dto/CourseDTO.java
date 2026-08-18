@@ -1,4 +1,4 @@
-package vn.edu.crs.courseservice.dto;
+package vn.edu.crs.courseService.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

@@ -1,13 +1,13 @@
-package vn.edu.crs.courseservice.repository;
+package vn.edu.crs.courseService.repository;
 
-import vn.edu.crs.courseservice.entity.Course;
+import vn.edu.crs.courseService.entity.Course;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
 
-@Repository
 public interface CourseRepository extends JpaRepository<Course, Long> {
     boolean existsByTenMonHocIgnoreCase(String tenMonHoc);
-    Page<Course> findByTenMonHocContainingIgnoreCase(String tenMonHoc, Pageable pageable);
+
+    // Buổi 3: Tìm kiếm phân trang theo tên môn học (không phân biệt hoa thường)
+    Page<Course> findByTenMonHocContainingIgnoreCase(String keyword, Pageable pageable);
 }

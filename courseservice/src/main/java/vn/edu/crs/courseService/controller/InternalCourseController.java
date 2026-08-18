@@ -1,14 +1,15 @@
-package vn.edu.crs.courseservice.controller;
+package vn.edu.crs.courseService.controller;
 
-import vn.edu.crs.courseservice.dto.CourseDTO;
-import vn.edu.crs.courseservice.service.CourseService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import vn.edu.crs.courseService.dto.CourseDTO;
+import vn.edu.crs.courseService.service.CourseService;
 
 @RestController
 @RequestMapping("/internal/courses")
 @RequiredArgsConstructor
 public class InternalCourseController {
+
     private final CourseService courseService;
 
     @PatchMapping("/{id}/reserve-seat")

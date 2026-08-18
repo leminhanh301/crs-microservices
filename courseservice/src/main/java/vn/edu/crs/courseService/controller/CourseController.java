@@ -1,28 +1,29 @@
-package vn.edu.crs.courseservice.controller;
+package vn.edu.crs.courseService.controller;
 
-import vn.edu.crs.courseservice.entity.Course;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
-import vn.edu.crs.courseservice.repository.CourseRepository;
-
-import java.util.List;
+import vn.edu.crs.courseService.dto.CourseDTO;
+import vn.edu.crs.courseService.service.CourseService;
 
 @RestController
 @RequestMapping("/courses")
+@RequiredArgsConstructor
 public class CourseController {
 
-    @Autowired
-    private CourseRepository courseRepository;
+    private final CourseService courseService;
 
-    // Lấy danh sách môn học từ DB
+    // Buổi 3: Thay endpoint GET /courses từ List sang Page, hỗ trợ search + phân trang + sort
     @GetMapping
-    public List<Course> getAllCourses() {
-        return courseRepository.findAll();
+    public Page<CourseDTO> search(
+            @RequestParam(required = false) String keyword,
+            Pageable pageable) {
+        return courseService.search(keyword, pageable);
     }
 
-    // Thêm môn học mới vào DB (ADMIN)
     @PostMapping
-    public Course createCourse(@RequestBody Course course) {
-        return courseRepository.save(course);
+    public CourseDTO createCourse(@RequestBody CourseDTO courseDTO) {
+        return courseService.create(courseDTO);
     }
 }
