@@ -1,36 +1,32 @@
-import { useEffect, useState } from 'react';
-import { getCourses } from './api/courseApi';
-import type { Course } from './types/course';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { Navbar } from './components/Navbar';
+import { ProtectedRoute } from './components/ProtectedRoute';
+import { AuthProvider } from './context/AuthContext';
+import { AdminCoursesPage } from './pages/AdminCoursesPage';
+import { CoursesPage } from './pages/CoursesPage';
+import { LoginPage } from './pages/LoginPage';
+import { MyRegistrationsPage } from './pages/MyRegistrationsPage';
+import { RegisterCoursePage } from './pages/RegisterCoursePage';
 
 function App() {
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    getCourses()
-      .then((res) => {
-        setCourses(res.data.content);
-      })
-      .catch((err) => {
-        console.error(err);
-        setError(
-          'Khong ket noi duoc toi he thong. Kiem tra lai api gateway da chay chua.'
-        );
-      });
-  }, []);
-
   return (
-    <div style={{ padding: 24, fontFamily: 'sans-serif' }}>
-      <h1>Kiem tra ket noi CRS qua Gateway</h1>
-
-      {error && (
-        <p style={{ color: 'red' }}>
-          {error}
-        </p>
-      )}
-
-      <pre>{JSON.stringify(courses, null, 2)}</pre>
-    </div>
+    <BrowserRouter>
+      <AuthProvider>
+        <Navbar />
+        <Routes>
+          <Route path="/" element={<Navigate to="/courses" replace />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/courses" element={<CoursesPage />} />
+          <Route element={<ProtectedRoute allowedRole="ADMIN" />}>
+            <Route path="/admin/courses" element={<AdminCoursesPage />} />
+          </Route>
+          <Route element={<ProtectedRoute allowedRole="STUDENT" />}>
+            <Route path="/register-course" element={<RegisterCoursePage />} />
+            <Route path="/my-registrations" element={<MyRegistrationsPage />} />
+          </Route>
+        </Routes>
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
 

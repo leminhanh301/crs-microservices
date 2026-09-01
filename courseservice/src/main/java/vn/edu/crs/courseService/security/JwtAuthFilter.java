@@ -56,30 +56,38 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
                 String username = claims.getSubject();
                 String role = claims.get("role", String.class);
+                
+                Object rawUserId = claims.get("userId");
+                Long userId = null;
+                if (rawUserId instanceof Number number) {
+                    userId = number.longValue();
+                }
 
-                // Chuẩn hóa role và tránh lỗi nếu role bị null
                 List<SimpleGrantedAuthority> authorities = Collections.emptyList();
                 if (role != null && !role.isBlank()) {
-                    String formattedRole = role.startsWith("ROLE_") ? role : "ROLE_" + role;
-                    authorities = List.of(new SimpleGrantedAuthority(formattedRole));
+                    String roleWithPrefix = role.startsWith("ROLE_") ? role : "ROLE_" + role;
+                    authorities = List.of(
+                            new SimpleGrantedAuthority(role),
+                            new SimpleGrantedAuthority(roleWithPrefix)
+                    );
                 }
 
                 var authentication = new UsernamePasswordAuthenticationToken(
                         username,
-                        null,
+                        userId,
                         authorities
                 );
 
-                // Gắn thêm thông tin request vào authentication
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
                 SecurityContextHolder.getContext().setAuthentication(authentication);
 
             } catch (Exception e) {
                 SecurityContextHolder.clearContext();
-                log.warn("JWT không hợp lệ: {}", e.getMessage());
-
+                log.warn("Invalid JWT: {}", e.getMessage());
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.setContentType("application/json");
+                response.getWriter().write("{\"message\":\"Unauthorized\"}");
                 return;
             }
         }
