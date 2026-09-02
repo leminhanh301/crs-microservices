@@ -13,7 +13,7 @@ interface CourseFormProps {
   serverError: string | null;
 }
 
-export default function CourseForm({
+export function CourseForm({
   editingCourse,
   onSubmit,
   onCancel,
@@ -105,3 +105,5 @@ export default function CourseForm({
     </form>
   );
 }
+
+export default CourseForm;

@@ -11,15 +11,19 @@ interface CourseListProps {
   onRetry: () => void;
   onEdit?: (course: Course) => void;
   onDelete?: (course: Course) => void;
+  onRegister?: (course: Course) => void;
+  registeringId?: number | null;
 }
 
-export default function CourseList({
+export function CourseList({
   courses,
   state,
   errorMessage,
   onRetry,
   onEdit,
   onDelete,
+  onRegister,
+  registeringId,
 }: CourseListProps) {
   if (state === 'loading') return <div className="status-card" role="status"><span className="spinner" aria-hidden="true" /><p>Đang tải danh sách môn học...</p></div>;
   if (state === 'error') {
@@ -41,7 +45,7 @@ export default function CourseList({
             <th>Tên môn học</th>
             <th>Số tín chỉ</th>
             <th>Số chỗ còn lại</th>
-            {(onEdit || onDelete) && <th>Thao tác</th>}
+            {(onEdit || onDelete || onRegister) && <th>Thao tác</th>}
           </tr>
         </thead>
         <tbody>
@@ -54,8 +58,17 @@ export default function CourseList({
                   {course.soChoConLai} / {course.soChoToiDa}
                 </span>
               </td>
-              {(onEdit || onDelete) && (
+              {(onEdit || onDelete || onRegister) && (
                 <td data-label="Thao tác">
+                  {onRegister && (
+                    <button
+                      type="button"
+                      disabled={course.soChoConLai === 0 || registeringId === course.id}
+                      onClick={() => onRegister(course)}
+                    >
+                      {registeringId === course.id ? 'Đang đăng ký...' : 'Đăng ký'}
+                    </button>
+                  )}
                   {onEdit && <button type="button" onClick={() => onEdit(course)}>Sửa</button>}
                   {onDelete && (
                     <button
@@ -74,4 +87,6 @@ export default function CourseList({
       </table>
     </div>
   );
-};
+}
+
+export default CourseList;

@@ -96,7 +96,7 @@ export const AdminCoursesPage = () => {
           setFormError(null);
           setEditingCourse(course);
         }}
-        onDelete={handleDelete}
+        onDelete={(course) => handleDelete(course.id)}
       />
       <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
     </main>
