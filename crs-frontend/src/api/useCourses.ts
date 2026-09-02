@@ -15,8 +15,20 @@ export const useCourses = (keyword: string = '', page: number = 0, size: number 
     setErrorMessage('');
     try {
       const res = await getCourses(keyword, page, size);
-      const content = res.data.content || [];
-      const pages = res.data.totalPages || 0;
+      const rawData = res.data as any;
+      let content: Course[] = [];
+      let pages = 0;
+
+      if (Array.isArray(rawData)) {
+        const kw = keyword.toLowerCase().trim();
+        const filtered = kw ? rawData.filter((c: Course) => c.tenMonHoc?.toLowerCase().includes(kw)) : rawData;
+        content = filtered;
+        pages = Math.ceil(filtered.length / size) || 1;
+      } else if (rawData && Array.isArray(rawData.content)) {
+        content = rawData.content;
+        pages = rawData.totalPages || 0;
+      }
+
       setCourses(content);
       setTotalPages(pages);
 
@@ -28,13 +40,13 @@ export const useCourses = (keyword: string = '', page: number = 0, size: number 
     } catch (err: any) {
       setState('error');
       if (!err.response) {
-        setErrorMessage('Khong ket noi duoc toi he thong. Vui long thu lai sau.');
+        setErrorMessage('Không kết nối được tới hệ thống. Vui lòng thử lại sau.');
       } else if (err.response.data?.message && typeof err.response.data.message === 'string') {
         setErrorMessage(err.response.data.message);
       } else if (typeof err.response.data === 'string') {
         setErrorMessage(err.response.data);
       } else {
-        setErrorMessage('Da co loi chay lai request. Vui long thu lai sau.');
+        setErrorMessage('Đã có lỗi xảy ra. Vui lòng thử lại sau.');
       }
     }
   }, [keyword, page, size]);
