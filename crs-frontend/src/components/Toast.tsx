@@ -1,3 +1,8 @@
+// path: crs-frontend/src/components/Toast.tsx
+// purpose: component thong bao noi (toast) dung chung cho ca he thong, tu dong bien mat sau vai giay
+
+import { useEffect } from 'react';
+
 export type ToastType = 'success' | 'error';
 
 export interface ToastMessage {
@@ -5,28 +10,41 @@ export interface ToastMessage {
   type: ToastType;
 }
 
-interface ToastProps extends ToastMessage {
+interface ToastProps {
+  message: string;
+  type: 'success' | 'error';
   onClose: () => void;
 }
 
-export const Toast = ({ message, type, onClose }: ToastProps) => {
+export default function Toast({ message, type, onClose }: ToastProps) {
+  useEffect(() => {
+    const timer = setTimeout(onClose, 3500);
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
   return (
     <div
-      role="alert"
       style={{
         position: 'fixed',
-        right: 20,
-        bottom: 20,
-        padding: 12,
-        color: 'white',
-        backgroundColor: type === 'success' ? 'green' : 'red',
+        bottom: 24,
+        right: 24,
+        padding: '12px 20px',
+        borderRadius: 8,
+        color: '#fff',
+        backgroundColor: type === 'success' ? '#15803d' : '#b91c1c',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
         zIndex: 1000,
       }}
     >
-      <span style={{ marginRight: 12 }}>{message}</span>
-      <button type="button" onClick={onClose} aria-label="Đóng thông báo">
-        ×
+      {message}
+      <button
+        onClick={onClose}
+        style={{ marginLeft: 12, background: 'none', border: 'none', color: '#fff', cursor: 'pointer' }}
+      >
+        ✕
       </button>
     </div>
   );
-};
+}
+
+export { Toast };

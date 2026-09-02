@@ -1,117 +1,108 @@
-import axios from 'axios';
-import { useCallback, useEffect, useState } from 'react';
-import { getCourseById } from '../api/courseApi';
-import {
-  cancelRegistration,
-  getMyRegistrations,
-  type Registration,
-} from '../api/registrationApi';
-import { Toast } from '../components/Toast';
-import { useToast } from '../hooks/useToast';
+// path: crs-frontend/src/pages/MyRegistrationsPage.tsx
+// purpose: trang "Mon hoc da dang ky" - lay danh sach dang ky roi tu ghep them ten mon hoc, cho phep huy dang ky
 
-interface RegistrationWithCourseName extends Registration {
+import { useEffect, useState, useCallback } from 'react';
+import axios from 'axios';
+import { getMyRegistrations, cancelRegistration } from '../api/registrationApi';
+import { getCourseById } from '../api/courseApi';
+import { useToast } from '../hooks/useToast';
+import Toast from '../components/Toast';
+import type { Registration } from '../types/registration';
+import type { Course } from '../types/course';
+import type { ApiErrorResponse } from '../types/apiError';
+
+interface RegistrationRow extends Registration {
   courseName: string;
 }
 
-const getErrorMessage = (error: unknown, fallback: string) => {
-  if (axios.isAxiosError(error) && typeof error.response?.data?.message === 'string') {
-    return error.response.data.message;
-  }
-  return fallback;
-};
-
-export const MyRegistrationsPage = () => {
-  const [registrations, setRegistrations] = useState<RegistrationWithCourseName[]>([]);
+export default function MyRegistrationsPage() {
+  const [rows, setRows] = useState<RegistrationRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [errorMessage, setErrorMessage] = useState('');
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [cancellingId, setCancellingId] = useState<number | null>(null);
+
   const { toast, showToast, hideToast } = useToast();
 
-  const loadRegistrations = useCallback(async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
-    setErrorMessage('');
+    setLoadError(null);
     try {
-      const response = await getMyRegistrations();
-      const activeRegistrations = response.data.filter(
-        (registration) =>
-          registration.trangThai === 'DA_DANG_KY' || registration.trangThai === 'DA DANG KY',
+      const res = await getMyRegistrations();
+      const activeRegistrations = res.data.filter(
+        (r) => r.trangThai === 'DA_DANG_KY' || r.trangThai === 'DA DANG KY'
       );
-      const withCourseNames = await Promise.all(
-        activeRegistrations.map(async (registration) => {
+
+      // Ghep ten mon hoc cho tung dong - goi song song bang Promise.all cho nhanh
+      const enriched = await Promise.all(
+        activeRegistrations.map(async (reg) => {
           try {
-            const courseResponse = await getCourseById(registration.courseId);
-            return { ...registration, courseName: courseResponse.data.tenMonHoc };
+            const courseRes = await getCourseById(reg.courseId);
+            return { ...reg, courseName: (courseRes.data as Course).tenMonHoc };
           } catch {
-            return { ...registration, courseName: `Môn học #${registration.courseId}` };
+            return {
+              ...reg,
+              courseName: `Mon hoc #${reg.courseId} (khong tim thay thong tin)`,
+            };
           }
-        }),
+        })
       );
-      setRegistrations(withCourseNames);
-    } catch (error: unknown) {
-      setErrorMessage(getErrorMessage(error, 'Không thể tải danh sách môn học đã đăng ký.'));
+      setRows(enriched);
+    } catch (err) {
+      let message = 'Khong tai duoc danh sach dang ky.';
+      if (axios.isAxiosError<ApiErrorResponse>(err) && err.response?.data?.message) {
+        message = err.response.data.message;
+      }
+      setLoadError(message);
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    // oxlint-disable-next-line react/set-state-in-effect -- load remote data on mount.
-    void loadRegistrations();
-  }, [loadRegistrations]);
+    loadData();
+  }, [loadData]);
 
-  const handleCancel = async (registrationId: number) => {
-    if (cancellingId !== null || !window.confirm('Bạn có chắc chắn muốn hủy đăng ký này không?')) {
-      return;
-    }
-
-    setCancellingId(registrationId);
+  const handleCancel = async (row: RegistrationRow) => {
+    if (!window.confirm(`Huy dang ky mon "${row.courseName}"?`)) return;
+    setCancellingId(row.id);
     try {
-      await cancelRegistration(registrationId);
-      showToast('Hủy đăng ký thành công.', 'success');
-      await loadRegistrations();
-    } catch (error: unknown) {
-      showToast(getErrorMessage(error, 'Hủy đăng ký thất bại.'), 'error');
+      await cancelRegistration(row.id);
+      showToast(`Da huy dang ky mon "${row.courseName}"`, 'success');
+      loadData(); // tai lai danh sach
+    } catch (err) {
+      let message = 'Huy dang ky khong thanh cong.';
+      if (axios.isAxiosError<ApiErrorResponse>(err) && err.response?.data?.message) {
+        message = err.response.data.message;
+      }
+      showToast(message, 'error');
     } finally {
       setCancellingId(null);
     }
   };
 
   return (
-    <main style={{ padding: 24, fontFamily: 'sans-serif', maxWidth: 900, margin: '0 auto' }}>
-      <h1>Môn học đã đăng ký</h1>
-      {loading && <p>Đang tải danh sách đăng ký...</p>}
-      {!loading && errorMessage && (
-        <div style={{ color: 'red' }}>
-          <p>{errorMessage}</p>
-          <button type="button" onClick={() => void loadRegistrations()}>Thử lại</button>
-        </div>
-      )}
-      {!loading && !errorMessage && registrations.length === 0 && (
-        <p>Chưa có môn học nào được đăng ký.</p>
-      )}
-      {!loading && !errorMessage && registrations.length > 0 && (
-        <table border={1} cellPadding={8} cellSpacing={0} style={{ width: '100%', borderCollapse: 'collapse' }}>
+    <div style={{ padding: 24, maxWidth: 800, margin: '0 auto' }}>
+      <h1>Mon hoc da dang ky</h1>
+      {loading && <p>Dang tai...</p>}
+      {!loading && loadError && <p style={{ color: '#b91c1c' }}>{loadError}</p>}
+      {!loading && !loadError && rows.length === 0 && <p>Ban chua dang ky mon hoc nao.</p>}
+      {!loading && !loadError && rows.length > 0 && (
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
-            <tr>
-              <th>ID đăng ký</th>
-              <th>Môn học</th>
-              <th>Ngày đăng ký</th>
-              <th>Thao tác</th>
+            <tr style={{ textAlign: 'left', borderBottom: '2px solid #333' }}>
+              <th>Ten mon hoc</th>
+              <th>Ngay dang ky</th>
+              <th>Thao tac</th>
             </tr>
           </thead>
           <tbody>
-            {registrations.map((registration) => (
-              <tr key={registration.id}>
-                <td>{registration.id}</td>
-                <td>{registration.courseName}</td>
-                <td>{registration.ngayDangKy}</td>
+            {rows.map((row) => (
+              <tr key={row.id} style={{ borderBottom: '1px solid #eee' }}>
+                <td>{row.courseName}</td>
+                <td>{new Date(row.ngayDangKy).toLocaleString('vi-VN')}</td>
                 <td>
-                  <button
-                    type="button"
-                    onClick={() => void handleCancel(registration.id)}
-                    disabled={cancellingId === registration.id}
-                  >
-                    {cancellingId === registration.id ? 'Đang hủy...' : 'Hủy đăng ký'}
+                  <button onClick={() => handleCancel(row)} disabled={cancellingId === row.id}>
+                    {cancellingId === row.id ? 'Dang huy...' : 'Huy dang ky'}
                   </button>
                 </td>
               </tr>
@@ -119,7 +110,9 @@ export const MyRegistrationsPage = () => {
           </tbody>
         </table>
       )}
-      {toast && <Toast {...toast} onClose={hideToast} />}
-    </main>
+      {toast && <Toast message={toast.message} type={toast.type} onClose={hideToast} />}
+    </div>
   );
-};
+}
+
+export { MyRegistrationsPage };

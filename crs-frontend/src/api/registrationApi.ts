@@ -1,19 +1,13 @@
+// path: crs-frontend/src/api/registrationApi.ts
+// purpose: cac ham goi API lien quan Registration qua Gateway
+
 import axiosClient from './axiosClient';
+import type { Registration, RegistrationRequest } from '../types/registration';
 
-export interface RegistrationPayload {
-  studentId: number;
-  courseId: number;
-}
+export type { Registration, RegistrationRequest };
+export type RegistrationPayload = RegistrationRequest;
 
-export interface Registration {
-  id: number;
-  studentId: number;
-  courseId: number;
-  trangThai: string;
-  ngayDangKy: string;
-}
-
-export const registerCourse = (payload: RegistrationPayload) => {
+export const registerCourse = (payload: RegistrationRequest) => {
   return axiosClient.post<Registration>('/api/registrations', payload);
 };
 

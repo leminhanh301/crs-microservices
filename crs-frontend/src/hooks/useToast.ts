@@ -1,19 +1,17 @@
-import { useCallback, useEffect, useState } from 'react';
-import type { ToastMessage, ToastType } from '../components/Toast';
+// path: crs-frontend/src/hooks/useToast.ts
+// purpose: hook nho giup goi Toast tu bat ky trang nao ma khong can lap lai state moi lan
 
-export const useToast = () => {
-  const [toast, setToast] = useState<ToastMessage | null>(null);
+import { useState, useCallback } from 'react';
 
-  const hideToast = useCallback(() => setToast(null), []);
-  const showToast = useCallback((message: string, type: ToastType) => {
+export function useToast() {
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  const showToast = useCallback((message: string, type: 'success' | 'error') => {
     setToast({ message, type });
   }, []);
 
-  useEffect(() => {
-    if (!toast) return;
-    const timer = window.setTimeout(hideToast, 3500);
-    return () => window.clearTimeout(timer);
-  }, [toast, hideToast]);
+  const clearToast = useCallback(() => setToast(null), []);
+  const hideToast = clearToast;
 
-  return { toast, showToast, hideToast };
-};
+  return { toast, showToast, clearToast, hideToast };
+}
