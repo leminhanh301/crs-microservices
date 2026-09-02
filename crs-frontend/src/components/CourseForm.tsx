@@ -60,7 +60,15 @@ export function CourseForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
-    await onSubmit(values);
+    try {
+      await onSubmit(values);
+      if (!editingCourse) {
+        setValues(emptyCourseForm);
+        setClientErrors({});
+      }
+    } catch {
+      // Server error handled via serverError prop
+    }
   };
 
   return (
