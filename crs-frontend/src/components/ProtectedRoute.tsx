@@ -1,21 +1,28 @@
+// path: crs-frontend/src/components/ProtectedRoute.tsx
+// purpose: chan truy cap route neu chua dang nhap hoac khong dung role yeu cau
+
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import type { LoginResponse } from '../types/auth';
 
 interface ProtectedRouteProps {
-  allowedRole: LoginResponse['role'];
+  children?: React.ReactNode;
+  requiredRole?: 'ADMIN' | 'STUDENT';
+  allowedRole?: 'ADMIN' | 'STUDENT';
 }
 
-export const ProtectedRoute = ({ allowedRole }: ProtectedRouteProps) => {
+export default function ProtectedRoute({ children, requiredRole, allowedRole }: ProtectedRouteProps) {
   const { user, isAuthenticated } = useAuth();
+  const targetRole = requiredRole || allowedRole;
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
-  if (user?.role !== allowedRole) {
+  if (targetRole && user?.role !== targetRole) {
     return <Navigate to="/courses" replace />;
   }
 
-  return <Outlet />;
-};
+  return children ? <>{children}</> : <Outlet />;
+}
+
+export { ProtectedRoute };

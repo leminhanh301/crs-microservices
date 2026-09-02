@@ -1,36 +1,39 @@
+// path: crs-frontend/src/components/Navbar.tsx
+// purpose: thanh dieu huong, hien thi menu khac nhau tuy theo trang thai dang nhap va role
+
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-export const Navbar = () => {
+export default function Navbar() {
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {
     logout();
-    navigate('/courses');
+    navigate('/login');
   };
 
   return (
-    <nav style={{ display: 'flex', gap: 16, alignItems: 'center', padding: 16 }}>
-      <Link to="/courses">Môn học</Link>
-      {user?.role === 'ADMIN' && <Link to="/admin/courses">Quản lý môn học</Link>}
-      {user?.role === 'STUDENT' && (
-        <>
-          <Link to="/register-course">Đăng ký học phần</Link>
-          <Link to="/my-registrations">Môn học đã đăng ký</Link>
-        </>
+    <nav style={{ display: 'flex', gap: 16, padding: 12, borderBottom: '1px solid #ddd', alignItems: 'center' }}>
+      <Link to="/courses">Danh sach mon hoc</Link>
+      {isAuthenticated && user?.role === 'ADMIN' && (
+        <Link to="/admin/courses">Quan tri mon hoc</Link>
       )}
-
-      <span style={{ marginLeft: 'auto' }}>
-        {isAuthenticated && user ? (
+      {isAuthenticated && user?.role === 'STUDENT' && (
+        <Link to="/register-course">Dang ky hoc phan</Link>
+      )}
+      <div style={{ marginLeft: 'auto' }}>
+        {isAuthenticated ? (
           <>
-            <span style={{ marginRight: 12 }}>{user.username} ({user.role})</span>
-            <button type="button" onClick={handleLogout}>Đăng xuất</button>
+            <span style={{ marginRight: 12 }}>Xin chao, {user?.username} ({user?.role})</span>
+            <button onClick={handleLogout}>Dang xuat</button>
           </>
         ) : (
-          <Link to="/login">Đăng nhập</Link>
+          <Link to="/login">Dang nhap</Link>
         )}
-      </span>
+      </div>
     </nav>
   );
-};
+}
+
+export { Navbar };

@@ -1,3 +1,7 @@
+// path: crs-frontend/src/api/axiosClient.ts
+// purpose: THEM Response Interceptor xu ly 401 (token het han/khong hop le) -> tu dong dang xuat.
+// Phan Request Interceptor GIU NGUYEN tu Buoi 7, khong sua.
+
 import axios from 'axios';
 
 const axiosClient = axios.create({
@@ -7,16 +11,28 @@ const axiosClient = axios.create({
   },
 });
 
-const DEFAULT_ADMIN_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsInVzZXJJZCI6MSwicm9sZSI6IlJPTEVfQURNSU4iLCJpYXQiOjE3ODgzMTg2MzMsImV4cCI6MTc5MDkxMDYzM30.OHfaJkZ0jvcTUqhXUIYhYRHOwT_G8yaOGLNioS8MScs';
-
+// Request Interceptor - tu Buoi 7, giu nguyen
 axiosClient.interceptors.request.use((config) => {
-  let token = localStorage.getItem('crs_token');
-  if (!token) {
-    token = DEFAULT_ADMIN_TOKEN;
-    localStorage.setItem('crs_token', token);
+  const token = localStorage.getItem('crs_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
-  config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
+
+// Response Interceptor - MOI o Buoi 8
+axiosClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
+      localStorage.removeItem('crs_token');
+      localStorage.removeItem('crs_user');
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+    }
+    return Promise.reject(error);
+  }
+);
 
 export default axiosClient;

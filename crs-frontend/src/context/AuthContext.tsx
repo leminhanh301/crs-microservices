@@ -1,76 +1,66 @@
-import { createContext, useContext, useState, type ReactNode } from 'react';
+// path: crs-frontend/src/context/AuthContext.tsx
+// purpose: quan ly trang thai dang nhap toan cuc, ghi/doc token dung key 'crs_token'
+// da thong nhat tu Buoi 7 - axiosClient KHONG can sua lai
+
+import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import type { LoginResponse } from '../types/auth';
 
-type Role = LoginResponse['role'];
-
 interface AuthUser {
-  id: number;
   username: string;
-  role: Role;
+  role: 'ADMIN' | 'STUDENT';
 }
 
 interface AuthContextValue {
   user: AuthUser | null;
-  login: (auth: LoginResponse) => void;
+  login: (data: LoginResponse) => void;
   logout: () => void;
   isAuthenticated: boolean;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+const TOKEN_KEY = 'crs_token';
+const USER_KEY = 'crs_user';
 
-const restoreUser = (): AuthUser | null => {
-  const token = localStorage.getItem('crs_token');
-  const storedUser = localStorage.getItem('crs_user');
-  if (!token || !storedUser) return null;
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<AuthUser | null>(null);
 
-  try {
-    const user = JSON.parse(storedUser) as AuthUser;
-    if (
-      typeof user.id === 'number' &&
-      typeof user.username === 'string' &&
-      (user.role === 'ADMIN' || user.role === 'STUDENT')
-    ) {
-      return user;
+  // Khoi phuc phien dang nhap khi F5 trang (doc lai tu localStorage)
+  useEffect(() => {
+    const savedUser = localStorage.getItem(USER_KEY);
+    const savedToken = localStorage.getItem(TOKEN_KEY);
+    if (savedUser && savedToken) {
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch {
+        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(USER_KEY);
+      }
     }
-  } catch {
-    // Invalid stored session is cleared below.
-  }
+  }, []);
 
-  localStorage.removeItem('crs_token');
-  localStorage.removeItem('crs_user');
-  return null;
-};
-
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<AuthUser | null>(restoreUser);
-
-  const login = ({ userId, token, username, role }: LoginResponse) => {
-    const authenticatedUser = { id: userId, username, role };
-    localStorage.setItem('crs_token', token);
-    localStorage.setItem('crs_user', JSON.stringify(authenticatedUser));
-    setUser(authenticatedUser);
+  const login = (data: LoginResponse) => {
+    localStorage.setItem(TOKEN_KEY, data.token);
+    const authUser: AuthUser = { username: data.username, role: data.role };
+    localStorage.setItem(USER_KEY, JSON.stringify(authUser));
+    setUser(authUser);
   };
 
   const logout = () => {
-    localStorage.removeItem('crs_token');
-    localStorage.removeItem('crs_user');
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
     setUser(null);
   };
 
   return (
-    <AuthContext.Provider
-      value={{ user, login, logout, isAuthenticated: user !== null }}
-    >
+    <AuthContext.Provider value={{ user, login, logout, isAuthenticated: !!user }}>
       {children}
     </AuthContext.Provider>
   );
-};
+}
 
-// oxlint-disable-next-line react/only-export-components -- the hook belongs to this context.
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within AuthProvider');
-  }
-  return context;
-};
+// eslint-disable-next-line react-refresh/only-export-components
+export function useAuth() {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth phai duoc dung ben trong AuthProvider');
+  return ctx;
+}

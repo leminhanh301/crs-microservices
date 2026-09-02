@@ -1,76 +1,69 @@
-import axios from 'axios';
-import { useState, type FormEvent } from 'react';
+// path: crs-frontend/src/pages/LoginPage.tsx
+// purpose: trang dang nhap, goi POST /api/auth/login, luu vao AuthContext roi dieu huong
+
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { loginRequest } from '../api/authApi';
+import axios from 'axios';
+import { login as loginApi } from '../api/authApi';
 import { useAuth } from '../context/AuthContext';
+import type { ApiErrorResponse } from '../types/apiError';
 
-const getErrorMessage = (error: unknown) => {
-  if (!axios.isAxiosError(error)) {
-    return error instanceof Error ? error.message : 'Đăng nhập thất bại.';
-  }
-
-  const data = error.response?.data;
-  if (typeof data === 'string') return data;
-  if (typeof data?.message === 'string') return data.message;
-  return error.message || 'Đăng nhập thất bại.';
-};
-
-export const LoginPage = () => {
+export default function LoginPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [errorMessage, setErrorMessage] = useState('');
+  const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const { login, logout } = useAuth();
+
+  const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
     setSubmitting(true);
-    setErrorMessage('');
-
     try {
-      const response = await loginRequest({ username, password });
-      login(response.data);
+      const res = await loginApi({ username, password });
+      login(res.data);
       navigate('/courses');
-    } catch (error: unknown) {
-      logout();
-      setErrorMessage(getErrorMessage(error));
+    } catch (err) {
+      if (axios.isAxiosError<ApiErrorResponse>(err) && err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else {
+        setError('Dang nhap that bai, vui long thu lai.');
+      }
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <main style={{ padding: 24, maxWidth: 400, margin: '0 auto' }}>
-      <h1>Đăng nhập</h1>
+    <div style={{ maxWidth: 360, margin: '80px auto', padding: 24, border: '1px solid #ddd', borderRadius: 8 }}>
+      <h2>Dang nhap he thong CRS</h2>
       <form onSubmit={handleSubmit}>
-        {errorMessage && <p style={{ color: 'red', marginBottom: 12 }}>{errorMessage}</p>}
-        <label style={{ display: 'block', marginBottom: 12 }}>
-          Tên đăng nhập
+        <div style={{ marginBottom: 12 }}>
+          <label>Ten dang nhap</label><br />
           <input
-            type="text"
             value={username}
-            onChange={(event) => setUsername(event.target.value)}
-            disabled={submitting}
-            required
-            style={{ display: 'block', width: '100%', padding: 8, boxSizing: 'border-box' }}
+            onChange={(e) => setUsername(e.target.value)}
+            style={{ width: '100%' }}
           />
-        </label>
-        <label style={{ display: 'block', marginBottom: 12 }}>
-          Mật khẩu
+        </div>
+        <div style={{ marginBottom: 12 }}>
+          <label>Mat khau</label><br />
           <input
             type="password"
             value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            disabled={submitting}
-            required
-            style={{ display: 'block', width: '100%', padding: 8, boxSizing: 'border-box' }}
+            onChange={(e) => setPassword(e.target.value)}
+            style={{ width: '100%' }}
           />
-        </label>
-        <button type="submit" disabled={submitting}>
-          {submitting ? 'Đang đăng nhập...' : 'Đăng nhập'}
+        </div>
+        {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
+        <button type="submit" disabled={submitting} style={{ width: '100%' }}>
+          {submitting ? 'Dang xu ly...' : 'Dang nhap'}
         </button>
       </form>
-    </main>
+    </div>
   );
-};
+}
+
+export { LoginPage };
