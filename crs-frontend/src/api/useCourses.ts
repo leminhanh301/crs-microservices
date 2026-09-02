@@ -1,62 +1,53 @@
 import { useCallback, useEffect, useState } from 'react';
-import axios from 'axios';
 import { getCourses } from './courseApi';
-import type { ApiErrorResponse } from '../types/apiError';
 import type { Course } from '../types/course';
 
 export type LoadState = 'loading' | 'success' | 'empty' | 'error';
 
-const MINIMUM_LOADING_TIME_MS = 5_000;
-
-function wait(milliseconds: number) {
-  return new Promise<void>((resolve) => window.setTimeout(resolve, milliseconds));
-}
-
-export function useCourses(keyword: string, page: number, size = 10) {
+export const useCourses = (keyword: string = '', page: number = 0, size: number = 10) => {
   const [courses, setCourses] = useState<Course[]>([]);
-  const [totalPages, setTotalPages] = useState(0);
+  const [totalPages, setTotalPages] = useState<number>(0);
   const [state, setState] = useState<LoadState>('loading');
-  const [errorMessage, setErrorMessage] = useState('');
-  const [requestKey, setRequestKey] = useState(0);
+  const [errorMessage, setErrorMessage] = useState<string>('');
 
-  const refetch = useCallback(() => setRequestKey((key) => key + 1), []);
+  const fetchCourses = useCallback(async () => {
+    setState('loading');
+    setErrorMessage('');
+    try {
+      const res = await getCourses(keyword, page, size);
+      const content = res.data.content || [];
+      const pages = res.data.totalPages || 0;
+      setCourses(content);
+      setTotalPages(pages);
+
+      if (content.length > 0) {
+        setState('success');
+      } else {
+        setState('empty');
+      }
+    } catch (err: any) {
+      setState('error');
+      if (!err.response) {
+        setErrorMessage('Khong ket noi duoc toi he thong. Vui long thu lai sau.');
+      } else if (err.response.data?.message && typeof err.response.data.message === 'string') {
+        setErrorMessage(err.response.data.message);
+      } else if (typeof err.response.data === 'string') {
+        setErrorMessage(err.response.data);
+      } else {
+        setErrorMessage('Da co loi chay lai request. Vui long thu lai sau.');
+      }
+    }
+  }, [keyword, page, size]);
 
   useEffect(() => {
-    const controller = new AbortController();
-    queueMicrotask(() => {
-      if (!controller.signal.aborted) {
-        setState('loading');
-        setErrorMessage('');
-      }
-    });
+    fetchCourses();
+  }, [fetchCourses]);
 
-    Promise.allSettled([
-      getCourses(keyword, page, size, controller.signal),
-      wait(MINIMUM_LOADING_TIME_MS),
-    ])
-      .then(([courseResult]) => {
-        if (courseResult.status === 'rejected') throw courseResult.reason;
-
-        const { data } = courseResult.value;
-        setCourses(data.content);
-        setTotalPages(data.totalPages);
-        setState(data.content.length === 0 ? 'empty' : 'success');
-      })
-      .catch((error: unknown) => {
-        if (axios.isCancel(error)) return;
-        let message = 'Đã xảy ra lỗi không xác định. Vui lòng thử lại.';
-        if (axios.isAxiosError<ApiErrorResponse>(error)) {
-          if (error.response?.data?.message) message = error.response.data.message;
-          else if (!error.response) message = 'Không kết nối được tới hệ thống. Vui lòng thử lại sau.';
-        }
-        setCourses([]);
-        setTotalPages(0);
-        setErrorMessage(message);
-        setState('error');
-      });
-
-    return () => controller.abort();
-  }, [keyword, page, size, requestKey]);
-
-  return { courses, totalPages, state, errorMessage, refetch };
-}
+  return {
+    courses,
+    totalPages,
+    state,
+    errorMessage,
+    refetch: fetchCourses,
+  };
+};

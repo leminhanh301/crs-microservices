@@ -1,24 +1,48 @@
+import React from 'react';
+
 interface PaginationProps {
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
 }
 
-export default function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) {
+export const Pagination: React.FC<PaginationProps> = ({
+  currentPage,
+  totalPages,
+  onPageChange,
+}) => {
   if (totalPages <= 1) return null;
+
+  const pages = Array.from({ length: totalPages }, (_, i) => i);
+
   return (
-    <nav className="pagination" aria-label="Phân trang danh sách môn học">
-      <button type="button" disabled={currentPage === 0}
-        onClick={() => onPageChange(currentPage - 1)}>‹ Trước</button>
-      <div className="pagination__pages">
-        {Array.from({ length: totalPages }, (_, page) => (
-          <button type="button" key={page} className={page === currentPage ? 'is-active' : undefined}
-            aria-current={page === currentPage ? 'page' : undefined} aria-label={`Trang ${page + 1}`}
-            onClick={() => onPageChange(page)}>{page + 1}</button>
-        ))}
-      </div>
-      <button type="button" disabled={currentPage >= totalPages - 1}
-        onClick={() => onPageChange(currentPage + 1)}>Sau ›</button>
-    </nav>
+    <div style={{ marginTop: 16, display: 'flex', gap: 8, alignItems: 'center' }}>
+      <button
+        disabled={currentPage === 0}
+        onClick={() => onPageChange(currentPage - 1)}
+      >
+        Trang trước
+      </button>
+
+      {pages.map((p) => (
+        <button
+          key={p}
+          onClick={() => onPageChange(p)}
+          style={{
+            fontWeight: p === currentPage ? 'bold' : 'normal',
+            backgroundColor: p === currentPage ? '#ddd' : 'transparent',
+          }}
+        >
+          {p + 1}
+        </button>
+      ))}
+
+      <button
+        disabled={currentPage >= totalPages - 1}
+        onClick={() => onPageChange(currentPage + 1)}
+      >
+        Trang sau
+      </button>
+    </div>
   );
-}
+};

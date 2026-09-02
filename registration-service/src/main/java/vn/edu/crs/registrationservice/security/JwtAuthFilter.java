@@ -50,17 +50,28 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
                 String username = claims.getSubject();
                 String role = claims.get("role", String.class);
+                
+                Object rawUserId = claims.get("userId");
+                Long userId = null;
+                if (rawUserId instanceof Number number) {
+                    userId = number.longValue();
+                }
 
+                String roleWithPrefix = role != null && role.startsWith("ROLE_") ? role : "ROLE_" + role;
                 var authToken = new UsernamePasswordAuthenticationToken(
                         username,
-                        null,
-                        List.of(new SimpleGrantedAuthority("ROLE_" + role))
+                        userId,
+                        List.of(new SimpleGrantedAuthority(roleWithPrefix), new SimpleGrantedAuthority(role))
                 );
 
                 SecurityContextHolder.getContext().setAuthentication(authToken);
 
             } catch (Exception e) {
                 SecurityContextHolder.clearContext();
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.setContentType("application/json");
+                response.getWriter().write("{\"message\":\"Unauthorized\"}");
+                return;
             }
         }
 

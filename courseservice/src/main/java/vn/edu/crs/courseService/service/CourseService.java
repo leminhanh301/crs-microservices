@@ -71,6 +71,22 @@ public class CourseService {
         return toDTO(courseRepository.save(course));
     }
 
+    public CourseDTO update(Long id, CourseDTO dto) {
+        Course course = courseRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Khong tim thay mon hoc id = " + id));
+        course.setTenMonHoc(dto.getTenMonHoc());
+        course.setSoTinChi(dto.getSoTinChi());
+        course.setSoChoToiDa(dto.getSoChoToiDa());
+        return toDTO(courseRepository.save(course));
+    }
+
+    public void delete(Long id) {
+        if (!courseRepository.existsById(id)) {
+            throw new NoSuchElementException("Khong tim thay mon hoc id = " + id);
+        }
+        courseRepository.deleteById(id);
+    }
+
     private CourseDTO toDTO(Course course) {
         return new CourseDTO(course.getId(), course.getTenMonHoc(), course.getSoTinChi(), course.getSoChoToiDa(), course.getSoChoConLai());
     }
