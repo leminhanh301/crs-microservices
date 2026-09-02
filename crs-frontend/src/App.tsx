@@ -11,7 +11,6 @@ import CourseList from './components/CourseList';
 import Pagination from './components/Pagination';
 import CourseForm from './components/CourseForm';
 import type { Course, CourseFormValues } from './types/course';
-import type { ApiErrorResponse } from './types/apiError';
 import './App.css';
 
 function App() {
@@ -29,16 +28,29 @@ function App() {
   };
 
   const extractErrorMessage = (err: unknown): string => {
-    if (axios.isAxiosError<ApiErrorResponse>(err)) {
-      const data = err.response?.data;
-      if (data?.message) return data.message;
-      // Truong hop loi validation server tra ve dang { tenMonHoc: "...", soTinChi: "..." }
-      if (data) {
-        const firstFieldError = Object.values(data).find((v) => typeof v === 'string');
-        if (firstFieldError) return firstFieldError;
-      }
+    if (!axios.isAxiosError(err)) {
+      return err instanceof Error ? err.message : 'Đã xảy ra lỗi, vui lòng thử lại.';
     }
-    return 'Da xay ra loi, vui long thu lai.';
+
+    if (err.response?.status === 401 || err.response?.status === 403) {
+      return 'Lỗi 401/403: Không có quyền truy cập hoặc token không hợp lệ (ROLE_ADMIN).';
+    }
+
+    const data = err.response?.data;
+    if (!data) return 'Không thể kết nối tới máy chủ (Network Error).';
+    if (typeof data === 'string') return data;
+    if (typeof data.message === 'string' && data.message.trim()) return data.message;
+    if (typeof data.error === 'string' && data.error.trim()) return data.error;
+
+    if (typeof data === 'object' && !Array.isArray(data)) {
+      const errorMessages = Object.entries(data)
+        .filter(([key, value]) =>
+          typeof value === 'string' && !['status', 'timestamp', 'path'].includes(key))
+        .map(([key, value]) => `${key}: ${value}`);
+      if (errorMessages.length > 0) return errorMessages.join('; ');
+    }
+
+    return 'Đã xảy ra lỗi, vui lòng thử lại.';
   };
 
   const handleFormSubmit = async (values: CourseFormValues) => {
