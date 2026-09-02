@@ -17,3 +17,15 @@ export interface PagedResponse<T> {
   number: number; // trang hien tai (bat dau tu 0)
   size: number;
 }
+
+export interface CourseFormValues {
+  tenMonHoc: string;
+  soTinChi: string;
+  soChoToiDa: string;
+}
+
+export const emptyCourseForm: CourseFormValues = {
+  tenMonHoc: '',
+  soTinChi: '',
+  soChoToiDa: '',
+};
